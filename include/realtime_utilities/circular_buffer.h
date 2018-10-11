@@ -37,6 +37,13 @@ public:
             buffer_not_empty.wait(lk);
         return cb.front();
     }
+    const T& back() 
+    {
+        lock lk(monitor);
+        while (cb.empty())
+            buffer_not_empty.wait(lk);
+        return cb.back();
+    }
     
     void pop_front() 
     {
