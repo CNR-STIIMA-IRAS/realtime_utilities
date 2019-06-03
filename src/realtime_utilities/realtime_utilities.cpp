@@ -34,7 +34,7 @@ bool show_new_pagefault_count(const char* logtext, const char* allowed_maj, cons
 
   getrusage(RUSAGE_SELF, &usage);
 
-  ROS_DEBUG("%-30.30s: Pagefaults, Major:%ld (Allowed %s), " \
+  printf("%-30.30s: Pagefaults, Major:%ld (Allowed %s), " \
             "Minor:%ld (Allowed %s)\n", logtext,
             usage.ru_majflt - last_majflt, allowed_maj,
             usage.ru_minflt - last_minflt, allowed_min);
@@ -128,34 +128,34 @@ bool rt_main_init(size_t pre_allocation_size)
 {
   if( !show_new_pagefault_count("Initial count", ">=0", ">=0") )
   {
-    ROS_FATAL("Error in show_new_pagefault_count. Exit.");
+    printf("Error in show_new_pagefault_count. Exit.");
     return false;
   }
    
   if(!configure_malloc_behavior() )
   {
-    ROS_FATAL("Error in configure_malloc_behavior. Exit.");
+    printf("Error in configure_malloc_behavior. Exit.");
     return false;
   }
    
   
   if(!show_new_pagefault_count("mlockall() generated", ">=0", ">=0") )
   {
-    ROS_FATAL("Error in show_new_pagefault_count. Exit.");
+    printf("Error in show_new_pagefault_count. Exit.");
     return false;
   }
   
    
   if(!reserve_process_memory(pre_allocation_size) )
   {
-    ROS_FATAL("Error in reserve_process_memory. Exit.");
+    printf("Error in reserve_process_memory. Exit.");
     return false;
   }
   
   
   if(!show_new_pagefault_count("malloc() and touch generated", ">=0", ">=0") )
   {
-    ROS_FATAL("Error in show_new_pagefault_count. Exit.");
+    printf("Error in show_new_pagefault_count. Exit.");
     return false;
   }
   
@@ -163,17 +163,17 @@ bool rt_main_init(size_t pre_allocation_size)
   /* Now allocate the memory for the 2nd time and prove the number of pagefaults are zero */
   if(!reserve_process_memory(pre_allocation_size) )
   {
-    ROS_FATAL("Error in reserve_process_memory. Exit.");
+    printf("Error in reserve_process_memory. Exit.");
     return false;
   }
   
   if(!show_new_pagefault_count("2nd malloc() and use generated", "0", "0") )
   {
-    ROS_FATAL("Error in show_new_pagefault_count. Exit.");
+    printf("Error in show_new_pagefault_count. Exit.");
     return false;
   }
   
-  ROS_DEBUG("\n\nLook at the output of ps -leyf, and see that the RSS is now about %zu [MB]\n", pre_allocation_size / (1024 * 1024));
+  printf("\n\nLook at the output of ps -leyf, and see that the RSS is now about %zu [MB]\n", pre_allocation_size / (1024 * 1024));
   
   return true;
 }
@@ -181,13 +181,53 @@ bool rt_main_init(size_t pre_allocation_size)
 
 bool rt_init_thread( size_t stack_size, int prio, int sched, period_info*  pinfo, long  period_ns  )
 {
+#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
+  printf("***********************\n");
+  printf("***********************\n");
+  printf("***********************\n");
+    RT_TASK *curtask;
+    RT_TASK_INFO curtaskinfo;
+    int iret = 0;
+
+    RTIME tstart, now;
+
+    curtask = rt_task_self();
+    int r = rt_task_inquire(curtask, &curtaskinfo);
+    if( r!=0 )
+    {
+      switch( r )
+      {
+        case EINVAL: case -EINVAL: printf("task is not a valid task descriptor, or if prio is invalid."); break;
+        case EPERM : case -EPERM : printf("task is NULL and this service was called from an invalid context."); break;
+      }
+      return false;
+    }
+
+    r = rt_task_set_priority	(	NULL, prio );
+    if( r!=0 )
+    {
+      switch( r )
+      {
+        case EINVAL: case -EINVAL: printf("task is not a valid task descriptor, or if prio is invalid."); break;
+        case EPERM : case -EPERM : printf("task is NULL and this service was called from an invalid context."); break;
+      }
+      return false;
+    }
+    
+    //Make the task periodic with a specified loop period
+    rt_task_set_periodic(NULL, TM_NOW, period_ns);
+  printf("!!***********************\n");
+  printf("!!***********************\n");
+  printf("!!***********************\n");
+#else
+
   if( !setprio(prio, sched) )
   {
-    ROS_FATAL("Error in setprio.");
+    printf("Error in setprio.");
     return false;
   }
 
-  ROS_DEBUG("I am an RT-thread with a stack that does not generate page-faults during use, stacksize=%zu\n", stack_size);
+  printf("I am an RT-thread with a stack that does not generate page-faults during use, stacksize=%zu\n", stack_size);
 
   //<do your RT-thing here>
 
@@ -199,6 +239,7 @@ bool rt_init_thread( size_t stack_size, int prio, int sched, period_info*  pinfo
     assert( period_ns > 0 );
     timer_periodic_init( pinfo, period_ns ); 
   }
+#endif
   
   return true;
 }
@@ -299,8 +340,8 @@ void timer_calc_sync_offset(int64_t reftime, int64_t cycletime , int64_t *offset
 
 double timer_difference_s( struct timespec *timeA_p, struct timespec *timeB_p )
 {
-    double ret = ( ( ( double ) ( timeA_p->tv_sec ) + ( (double) timeA_p->tv_nsec)/1.e9 )
-                -( ( double ) ( timeB_p->tv_sec ) + ( (double) timeB_p->tv_nsec)/1.e9 ) );
+    double ret = ( ( ( double ) ( timeA_p->tv_sec ) + ( (double) timeA_p->tv_nsec ) /1.e9 )
+                  -( ( double ) ( timeB_p->tv_sec ) + ( (double) timeB_p->tv_nsec ) /1.e9 ) );
     return ret;
 }
 
