@@ -109,9 +109,6 @@ bool rt_init_thread( size_t stack_size, int prio, int sched, period_info*  pinfo
     
     //Make the task periodic with a specified loop period
     rt_task_set_periodic(NULL, TM_NOW, period_ns);
-    printf("!!***********************\n");
-    printf("!!***********************\n");
-    printf("!!***********************\n");
 #else
 
   if( !setprio(prio, sched) )
@@ -126,13 +123,13 @@ bool rt_init_thread( size_t stack_size, int prio, int sched, period_info*  pinfo
 
   show_new_pagefault_count("Caused by creating thread", ">=0", ">=0");
   prove_thread_stack_use_is_safe(stack_size);
+#endif
   
   if( pinfo != NULL )
   {
     assert( period_ns > 0 );
     timer_periodic_init( pinfo, period_ns ); 
   }
-#endif
   
   return true;
 }

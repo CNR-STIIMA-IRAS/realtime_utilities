@@ -3,20 +3,16 @@
 #define __coe__ros__base_shared_memeory__h__
 
 
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-  #include <alchemy/pipe.h>
-#else
-  #include <boost/algorithm/string.hpp>
-  #include <boost/interprocess/shared_memory_object.hpp>
-  #include <boost/interprocess/mapped_region.hpp>
-  #include <boost/interprocess/managed_shared_memory.hpp>
-  #include <boost/interprocess/containers/vector.hpp>
-  #include <boost/interprocess/allocators/allocator.hpp>
-  #include <boost/interprocess/sync/named_mutex.hpp>
-  #include <boost/interprocess/sync/scoped_lock.hpp>
-  #include <boost/interprocess/sync/sharable_lock.hpp>
-  #include <boost/interprocess/sync/upgradable_lock.hpp>
-#endif
+#include <boost/algorithm/string.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/interprocess/sync/sharable_lock.hpp>
+#include <boost/interprocess/sync/upgradable_lock.hpp>
 
 #include <tuple>
 #include <realtime_utilities/realtime_utilities.h>
@@ -102,13 +98,9 @@ protected:
     const std::string                                 name_;
     size_t                                            dim_with_header_;
     int                                               rt_pipe_fd_;
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-    RT_PIPE                                           rt_pipe_;
-#else
     boost::interprocess::mapped_region                shared_map_;
     boost::interprocess::shared_memory_object         shared_memory_;
     std::shared_ptr<boost::interprocess::named_mutex> mutex_;
-#endif
 
     double                                            start_watchdog_time_;
     double                                            data_time_prev_;

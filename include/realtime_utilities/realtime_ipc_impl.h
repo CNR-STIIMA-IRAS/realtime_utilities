@@ -47,9 +47,9 @@ std::string rt_pipe_write_error( int val )
   switch( val )
   {
 
-    case ENOMEM     : case -ENOMEM      : return "not enough buffer space is available to complete the operation."; 
-    case EINVAL     : case -EINVAL      : return "mode is invalid or pipe is not a pipe descriptor";
-    case EIDRM      : case -EIDRM       : return "pipe is a closed pipe descriptor";
+    case -ENOMEM      : return "not enough buffer space is available to complete the operation."; 
+    case -EINVAL      : return "mode is invalid or pipe is not a pipe descriptor";
+    case -EIDRM       : return "pipe is a closed pipe descriptor";
     default:
       return "value '" + std::to_string( val) + " is not recognized.";
   }
@@ -60,9 +60,9 @@ std::string rt_pipe_delete_error( int val )
 {
   switch( val ) 
   {
-    case EINVAL: case -EINVAL: return( "pipe is not a valid pipe descriptor. Abort" );
-    case EIDRM : case -EIDRM : return( "is returned if pipe is a closed pipe descriptor. Abort" ); 
-    case EPERM : case -EPERM : return( "this service was called from an asynchronous context. Abort" ); 
+    case -EINVAL: return( "pipe is not a valid pipe descriptor. Abort" );
+    case -EIDRM : return( "is returned if pipe is a closed pipe descriptor. Abort" ); 
+    case -EPERM : return( "this service was called from an asynchronous context. Abort" ); 
   }
   return "Error not tracked.";
 }
@@ -90,22 +90,7 @@ RealTimeIPC::RealTimeIPC ( const std::string& identifier, double operational_tim
 inline
 bool RealTimeIPC::init( )
 {
-// RT definitions
-#if defined(__COBALT__)
-    bool cobalt_core = true;
-#else
-    bool cobalt_core = false;
-#endif
-
-#if !defined(__COBALT_WRAP__)
-    bool alchemy_skin = true;
-#else
-    bool alchemy_skin = false;
-#endif
-
-    rt_skin_    = !cobalt_core ? POSIX
-                : alchemy_skin ? RT_ALCHEMY
-                : RT_POSIX;
+    rt_skin_    = POSIX;
 
     // RT definitions
     printf ( "[%sSTART%s] %sRealTimeIPC Init%s [ %s%s%s ] ========================\n", BOLDMAGENTA(), RESET(), BOLDBLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET() );
@@ -119,89 +104,20 @@ bool RealTimeIPC::init( )
       case PIPE_SERVER:
       {
         assert( rt_skin_ == RT_ALCHEMY );
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-        unsigned int trial=0;
-        
-        while( trial++ <10 )
-        {
-          printf("[%s] rt_pipe_create \n", name_.c_str() );
-          RT_TASK *curtask;
-          RT_TASK_INFO curtaskinfo;
-          curtask = rt_task_self();
-          int r = rt_task_inquire(curtask, &curtaskinfo);
-          if( r<0 )
-          {
-            switch( r )
-            {
-              case -EINVAL: printf("task is not a valid task descriptor, or if prio is invalid.\n"); break;
-              case -EPERM : printf("task is NULL and this service was called from an invalid context.\n"); break;
-            }
-          }
-          else
-          {
-            printf("[%s] rt_pipe_create: trye create (dim pipe %zu)\n", name_.c_str(), dim_with_header_ );
-            int ret = rt_pipe_create(&rt_pipe_, name_.c_str(), P_MINOR_AUTO, dim_with_header_  );
-            if ( ret < 0)
-            {
-              printf("[%s] rt_pipe_create error: %s.\n", name_.c_str(), rt_pipe_create_error( ret ).c_str()  );
-            }
-            else
-            {
-//               printf("[%s] rt_pipe_bind.\n", name_.c_str());
-//               ret = rt_pipe_bind(&rt_pipe_, name_.c_str(), TM_INFINITE );
-//               if( r!=0 )
-//               {
-//                 switch( r )
-//                 {
-//                   case EINTR : case -EINTR : printf("rt_task_unblock() was called for the current task before the retrieval has completed.\n"); break;
-//                   case EWOULDBLOCK : case -EWOULDBLOCK : printf("a timeout is equal to TM_NONBLOCK and the searched object is not registered on entry.\n"); break;
-//                   case ETIMEDOUT : case -ETIMEDOUT : printf("the object cannot be retrieved within the specified amount of time.\n"); break;
-//                   case EPERM : case -EPERM : printf("this service should block, but was not called from a Xenomai thread.\n"); break;
-//                 }
-//                 rt_pipe_unbind(&rt_pipe_);
-//               }
-//               else
-//               {
-                ok = true;
-                break;
-//                }
-            }
-            rt_pipe_delete(&rt_pipe_);
-          }
-          ok = false;
-        }
-        
-
-#endif
+        assert(0);
       }
       break;
       
       case PIPE_CLIENT:
       {
         assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
-        printf("[-----] %sRealTimeIPC Init%s [ %s%s%s%s ] Pipe opening (size data: %zu).\n", BLUE(), YELLOW(), BOLDCYAN(), name_.c_str(), RESET(), YELLOW(), dim_with_header_);
-        rt_pipe_fd_ = open( ("/proc/xenomai/registry/rtipc/xddp/"+name_).c_str() , O_RDWR);
-        if (rt_pipe_fd_ < 0)
-        {
-            printf("[-----] %sRealTimeIPC Init%s [ %s%s%s%s ] Pipe opening failed.\n", BLUE(), YELLOW(), BOLDCYAN(), name_.c_str(), RESET(), YELLOW());
-            ok = false;
-        }
-        int flags = fcntl(rt_pipe_fd_, F_GETFL, 0);
-        fcntl(rt_pipe_fd_, F_SETFL, flags | O_NONBLOCK);
-#endif
+        assert(0);
       }
       break;
       case SHMEM_SERVER:
       {
-        assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
         if( dim_with_header_ > sizeof(RealTimeIPC::DataPacket::Header) )
         {
-  /*        if (!*/boost::interprocess::named_mutex::remove(name_.c_str());/*)*/
-  //         {
-  //             printf("[CHECK] %sRealTimeIPC Init%s [ %s%s%s%s ] Error in Removing Mutex.\n", BLUE(), YELLOW(), BOLDCYAN(), name_.c_str(), RESET(), YELLOW());
-  //         }
 
           // store old
           mode_t old_umask = umask(0);
@@ -219,13 +135,10 @@ bool RealTimeIPC::init( )
           // restore old
           umask(old_umask);
         }
-#endif
       }
       break;
       case SHMEM_CLIENT:
       {
-        assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
         printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Bond to Shared Memory.\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET( ) );
         shared_memory_ = boost::interprocess::shared_memory_object(boost::interprocess::open_only, name_.c_str(), boost::interprocess::read_write);
         shared_map_    = boost::interprocess::mapped_region(shared_memory_, boost::interprocess::read_write);
@@ -241,25 +154,20 @@ bool RealTimeIPC::init( )
         printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Bond to Shared Memory (bytes %s%zu/%zu%s).\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), dim_with_header_ -  sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_, RESET());
         
         printf ("[%sREADY%s] %sRealTimeIPC Init%s [ %s%s%s ] Ready.\n", BOLDGREEN(), RESET(), BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET() );
-#endif
       }
       break;
       case MQUEUE_SERVER:
       {
         assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__) 
         printf("Not yet implemented :). Abort.\n");
         assert( 0 );
-#endif
       }
       break;
       case MQUEUE_CLIENT:
       {
         assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__) 
         printf("Not yet implemented :). Abort.\n");
         assert( 0 );
-#endif
       }
       break;
       }
@@ -305,31 +213,16 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
       case PIPE_SERVER:
       {
         assert( rt_skin_ == RT_ALCHEMY );
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-        int ret = rt_pipe_delete(&rt_pipe_);
-        if ( ret != 0 )
-        {
-          printf("[%s] rt_pipe_delete error: %s\n", name_.c_str(), rt_pipe_delete_error(ret).c_str() );        
-        }
-#endif
       }
       break;
       case PIPE_CLIENT:
       {
         assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
-        int ret = close(  rt_pipe_fd_  );
-        if ( ret != 00)
-        {
-            printf("[-----] %sRealTimeIPC Init%s [ %s%s%s%s ] Pipe opening failed.\n", BLUE(), YELLOW(), BOLDCYAN(), name_.c_str(), RESET(), YELLOW());
-        }
-#endif       
       }
       break;
       case SHMEM_SERVER:
       {
         assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
         printf ( "[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Remove Shared Mem\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDBLUE(), RESET());
         if( ! boost::interprocess::shared_memory_object::remove ( name_.c_str() ) )
         {
@@ -341,33 +234,25 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
         {
           printf ( "[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Error\n", BOLDCYAN(), name_.c_str(), RED(), BOLDBLUE(), RESET());
         }
-#endif
       }
       break;
       case SHMEM_CLIENT:
       {
         assert( rt_skin_ == POSIX );            
-#if !defined(__COBALT__) 
-        //nothing to do
-#endif
       }
       break;
       case MQUEUE_SERVER:
       {
         assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__) 
         printf("Not yet implemented :). Abort.\n");
         assert( 0 );
-#endif
       }
       break;
       case MQUEUE_CLIENT:
       {
         assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__) 
         printf("Not yet implemented :). Abort.\n");
         assert( 0 );
-#endif
       }
       break;
       }
@@ -397,7 +282,6 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
 inline
 void RealTimeIPC::getDataPacket( RealTimeIPC::DataPacket* shmem )
 {
-  static size_t cnt = 0;
   assert( shmem );
   assert( dim_with_header_ < sizeof(RealTimeIPC::DataPacket) );
 
@@ -407,18 +291,11 @@ void RealTimeIPC::getDataPacket( RealTimeIPC::DataPacket* shmem )
     case PIPE_SERVER: 
     {
       assert( rt_skin_ == RT_ALCHEMY );
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-      RTIME now = rt_timer_read();
-      int ret = rt_pipe_read_until( &rt_pipe_, shmem, dim_with_header_,  TM_NONBLOCK );
-#endif
     }
     break;
     case PIPE_CLIENT: 
     {
       assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
-      int ret = read(rt_pipe_fd_, shmem, dim_with_header_);
-#endif
     }
     break;
     //---
@@ -426,11 +303,9 @@ void RealTimeIPC::getDataPacket( RealTimeIPC::DataPacket* shmem )
     case SHMEM_CLIENT: 
     {
       assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
       boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock ( *mutex_ );  // from local buffer to shared memory
       std::memcpy ( shmem, shared_map_.get_address(), shared_map_.get_size() );
       lock.unlock();
-#endif
     }
     break;
     //---
@@ -438,10 +313,8 @@ void RealTimeIPC::getDataPacket( RealTimeIPC::DataPacket* shmem )
     case MQUEUE_CLIENT:
     {
       assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__ )
       printf("Not yet implemented :). Abort.\n");
       assert(0);
-#endif
     }
     break;
   }
@@ -459,23 +332,11 @@ void RealTimeIPC::setDataPacket( const DataPacket* shmem )
     case PIPE_SERVER: 
     {
       assert( rt_skin_ == RT_ALCHEMY );
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-      int ret = rt_pipe_write( &rt_pipe_, shmem, dim_with_header_, P_URGENT);
-#else
-    throw std::runtime_error("PIPE_SERVER Available only for Xeno-Alchemy compilation");
-#endif
     }
     break;
     case PIPE_CLIENT:
     {
       assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
-      int ret = write(rt_pipe_fd_, shmem, dim_with_header_);
-      if ( ret <=0  )
-      {
-        printf("[%s] getDataPacket error!\n", name_.c_str() );
-      }
-#endif
     }
     break;
     //---
@@ -483,11 +344,9 @@ void RealTimeIPC::setDataPacket( const DataPacket* shmem )
     case SHMEM_CLIENT: 
     {
       assert( rt_skin_ == POSIX );
-#if !defined(__COBALT__) 
       boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock ( *mutex_ );
       std::memcpy ( shared_map_.get_address(), shmem, shared_map_.get_size()  );
       lock.unlock();
-#endif
     }
     break;
     //---
@@ -495,10 +354,6 @@ void RealTimeIPC::setDataPacket( const DataPacket* shmem )
     case MQUEUE_CLIENT: 
     {
       assert( rt_skin_ == RT_POSIX );
-#if defined(__COBALT__) && defined(__COBALT__WRAP__ )
-      printf("Not yet implemented :). Abort.\n");
-      assert(0);
-#endif
     }
     break;
   }
