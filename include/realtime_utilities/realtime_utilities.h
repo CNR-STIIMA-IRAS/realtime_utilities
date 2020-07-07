@@ -14,29 +14,33 @@
 #if defined(__COBALT__) && !defined(__COBALT_WRAP__)
 #include <alchemy/task.h>
 #endif
+#include <iostream>
+#include <ctime>
+#include <ratio>
+#include <chrono>
+#include <mutex>
+
 namespace realtime_utilities
 {
 
-inline const char* RESET        ( ) { return "\033[0m";			};
-inline const char* BLACK        ( ) { return "\033[30m";			};
-inline const char* RED          ( ) { return "\033[31m";			};
-inline const char* GREEN        ( ) { return "\033[32m";			};
-inline const char* YELLOW       ( ) { return "\033[33m";			};
-inline const char* BLUE         ( ) { return "\033[34m";			};
-inline const char* MAGENTA      ( ) { return "\033[35m";			};
-inline const char* CYAN         ( ) { return "\033[36m";			};
-inline const char* WHITE        ( ) { return "\033[37m";			};
-inline const char* BOLDBLACK    ( ) { return "\033[1m\033[30m";	};
-inline const char* BOLDRED      ( ) { return "\033[1m\033[31m";	};
-inline const char* BOLDGREEN    ( ) { return "\033[1m\033[32m";	};
-inline const char* BOLDYELLOW   ( ) { return "\033[1m\033[33m";	};
-inline const char* BOLDBLUE     ( ) { return "\033[1m\033[34m";	};
-inline const char* BOLDMAGENTA  ( ) { return "\033[1m\033[35m";	};
-inline const char* BOLDCYAN     ( ) { return "\033[1m\033[36m";	};
-inline const char* BOLDWHITE    ( ) { return "\033[1m\033[37m";  	};
+inline const char* RESET        ( ) { return "\033[0m";			    }
+inline const char* BLACK        ( ) { return "\033[30m";			  }
+inline const char* RED          ( ) { return "\033[31m";			  }
+inline const char* GREEN        ( ) { return "\033[32m";			  }
+inline const char* YELLOW       ( ) { return "\033[33m";			  }
+inline const char* BLUE         ( ) { return "\033[34m";			  }
+inline const char* MAGENTA      ( ) { return "\033[35m";			  }
+inline const char* CYAN         ( ) { return "\033[36m";			  }
+inline const char* WHITE        ( ) { return "\033[37m";			  }
+inline const char* BOLDBLACK    ( ) { return "\033[1m\033[30m";	}
+inline const char* BOLDRED      ( ) { return "\033[1m\033[31m";	}
+inline const char* BOLDGREEN    ( ) { return "\033[1m\033[32m";	}
+inline const char* BOLDYELLOW   ( ) { return "\033[1m\033[33m";	}
+inline const char* BOLDBLUE     ( ) { return "\033[1m\033[34m";	}
+inline const char* BOLDMAGENTA  ( ) { return "\033[1m\033[35m";	}
+inline const char* BOLDCYAN     ( ) { return "\033[1m\033[36m";	}
+inline const char* BOLDWHITE    ( ) { return "\033[1m\033[37m"; }
  
-
-
 struct period_info {
   struct timespec next_period;
   long period_ns;
@@ -56,8 +60,6 @@ bool configure_malloc_behavior(void);
 bool reserve_process_memory(size_t size);
 
 bool rt_main_init( size_t pre_allocation_size );
-
-
 
 uint32_t timer_inc_period(period_info *pinfo);
 
@@ -133,6 +135,9 @@ bool rt_init_thread( size_t stack_size, int prio, int sched, period_info*  pinfo
   
   return true;
 }
+
+
+
 
 }
 

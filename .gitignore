@@ -3,4 +3,7 @@
 *.user
 *.user*
 *.swp
+.vscode/
+build/
+*.bkp
 
