@@ -19,6 +19,8 @@
 #include <ratio>
 #include <chrono>
 #include <mutex>
+#include <string>
+#include <vector>
 
 namespace realtime_utilities
 {
@@ -46,19 +48,21 @@ bool rt_main_init(size_t pre_allocation_size);
 
 uint32_t timer_inc_period(period_info *pinfo);
 
-uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time);
+//uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time);
 
 void   timer_periodic_init(period_info *pinfo, long period_ns);
 
 int    timer_wait_rest_of_period(struct timespec *ts);
 
-void   timer_add_timespec(struct timespec *ts, int64_t addtime);
+void   timer_add(struct timespec *ts, int64_t addtime);
 
-void   timer_calc_sync_offset(int64_t reftime, int64_t cycletime, int64_t *offsettime);
 
-double timer_difference_s(struct timespec *timeA_p, struct timespec *timeB_p);
-
-double timer_to_s(struct timespec *timeA_p);
+void    timer_calc_sync_offset(int64_t reftime, int64_t cycletime, int64_t *offsettime);
+double  timer_difference_s(struct timespec const * timeA_p, struct timespec const *timeB_p);
+int64_t timer_difference_ns(struct timespec const * timeA_p, struct timespec const *timeB_p);
+bool    timer_greater_than(struct timespec const * timeA_p, struct timespec const *timeB_p);
+double  timer_to_s(const struct timespec *timeA_p);
+int64_t timer_to_ns(const struct timespec *timeA_p);
 
 std::vector<std::string> get_ifaces();
 
