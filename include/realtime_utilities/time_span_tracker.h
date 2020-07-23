@@ -13,6 +13,7 @@ namespace realtime_utilities
 struct TimeSpanTracker
 {
   const double                                   nominal_time_span_;
+  size_t                                         cycles_;
   size_t                                         missed_cycles_;
   enum { NONE, TIME_SPAN, TICK_TOCK }            mode_;
 
@@ -33,6 +34,7 @@ struct TimeSpanTracker
     {
       missed_cycles_++;
     }
+    cycles_++;
     last_tick_ = t;
     return true;
   }
@@ -65,6 +67,7 @@ struct TimeSpanTracker
     {
       missed_cycles_++;
     }
+    cycles_++;
     last_tick_ = t;
     return true;
   }
@@ -89,9 +92,14 @@ struct TimeSpanTracker
     std::lock_guard<std::mutex> lock(mtx_);
     return missed_cycles_;
   }
+  size_t   getTotalCycles() const
+  {
+    std::lock_guard<std::mutex> lock(mtx_);
+    return cycles_;
+  }
 
   TimeSpanTracker(const int windows_dim, const double nominal_time_span)
-    : nominal_time_span_(nominal_time_span), missed_cycles_(0), mode_(NONE), buffer_(windows_dim) {}
+    : nominal_time_span_(nominal_time_span), cycles_(0),missed_cycles_(0), mode_(NONE), buffer_(windows_dim) {}
   //TimeSpanTracker( const TimeSpanTracker& ts): buffer_(ts.windows_dim_), nominal_time_span_(ts.nominal_time_span_), missed_cycles_(0), mode_(NONE){}
 };
 

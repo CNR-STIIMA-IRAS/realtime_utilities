@@ -219,16 +219,16 @@ uint32_t timer_inc_period(period_info *pinfo)
   return missed_deadlines;
 }
 
-uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time_ns)
-{
-  struct timespec before;
-  before.tv_nsec = pinfo->next_period.tv_nsec;
-  before.tv_sec  = pinfo->next_period.tv_sec;
-  timer_add_timespec(&pinfo->next_period, pinfo->period_ns + offest_time_ns);
+//uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time_ns)
+//{
+//  struct timespec before;
+//  before.tv_nsec = pinfo->next_period.tv_nsec;
+//  before.tv_sec  = pinfo->next_period.tv_sec;
+//  timer_add(&pinfo->next_period, pinfo->period_ns + offest_time_ns);
 
-  double d = timer_difference_s(&before, &(pinfo->next_period));
-  return d > 0 ? uint64_t(d * 1e9) / pinfo->period_ns : 0;
-}
+//  double d = timer_difference_s(&before, &(pinfo->next_period));
+//  return d > 0 ? uint64_t(d * 1e9) / pinfo->period_ns : 0;
+//}
 
 
 void timer_periodic_init(period_info *pinfo, long period_ns)
@@ -236,7 +236,6 @@ void timer_periodic_init(period_info *pinfo, long period_ns)
   pinfo->period_ns = period_ns;
   clock_gettime(CLOCK_MONOTONIC, &(pinfo->next_period));
 }
-
 
 int timer_wait_rest_of_period(struct timespec *ts)
 {
@@ -263,7 +262,7 @@ int timer_wait_rest_of_period(struct timespec *ts)
 }
 
 
-void timer_add_timespec(struct timespec *ts, int64_t addtime)
+void timer_add(struct timespec *ts, int64_t addtime)
 {
   int64_t sec, nsec;
 
@@ -301,17 +300,40 @@ void timer_calc_sync_offset(int64_t reftime, int64_t cycletime, int64_t *offsett
   *offsettime = -(delta / 100) - (integral / 20);
 }
 
-
-double timer_difference_s(struct timespec *timeA_p, struct timespec *timeB_p)
+int64_t timer_difference_ns(struct timespec const * timeA_p, struct timespec const *timeB_p)
 {
-  double ret = (((double)(timeA_p->tv_sec) + ((double) timeA_p->tv_nsec) / 1.e9)
-                - ((double)(timeB_p->tv_sec) + ((double) timeB_p->tv_nsec) / 1.e9));
+  int64_t ret = timeA_p->tv_nsec - timeB_p->tv_nsec;
+  ret +=  1e9*( timeA_p->tv_sec  - timeB_p->tv_sec );
   return ret;
 }
 
-double timer_to_s(struct timespec *timeA_p)
+
+double timer_difference_s(struct timespec const * timeA_p, struct timespec const *timeB_p)
+{
+  double ret = static_cast<double>( timeA_p->tv_nsec - timeB_p->tv_nsec ) / (double(1e9));
+  ret       += static_cast<double>( timeA_p->tv_sec  - timeB_p->tv_sec );
+  return ret;
+}
+
+
+bool timer_greater_than(struct timespec const * timeA_p, struct timespec const *timeB_p)
+{
+  if( timeA_p->tv_sec > timeB_p->tv_sec)
+    return true;
+  else if( timeA_p->tv_sec == timeB_p->tv_sec)
+    return timeA_p->tv_nsec > timeB_p->tv_nsec;
+  else
+    return false;
+}
+
+double timer_to_s(const timespec*timeA_p)
 {
   return ((double)(timeA_p->tv_sec) + ((double) timeA_p->tv_nsec) / 1.e9);
+}
+
+int64_t timer_to_ns(const struct timespec *timeA_p)
+{
+  return (1e9*timeA_p->tv_sec + timeA_p->tv_nsec );
 }
 
 
