@@ -219,16 +219,16 @@ uint32_t timer_inc_period(period_info *pinfo)
   return missed_deadlines;
 }
 
-//uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time_ns)
-//{
-//  struct timespec before;
-//  before.tv_nsec = pinfo->next_period.tv_nsec;
-//  before.tv_sec  = pinfo->next_period.tv_sec;
-//  timer_add(&pinfo->next_period, pinfo->period_ns + offest_time_ns);
+uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time_ns)
+{
+  struct timespec before;
+  before.tv_nsec = pinfo->next_period.tv_nsec;
+  before.tv_sec  = pinfo->next_period.tv_sec;
+  timer_add(&pinfo->next_period, pinfo->period_ns + offest_time_ns);
 
-//  double d = timer_difference_s(&before, &(pinfo->next_period));
-//  return d > 0 ? uint64_t(d * 1e9) / pinfo->period_ns : 0;
-//}
+  double d = timer_difference_s(&before, &(pinfo->next_period));
+  return d > 0 ? uint64_t(d * 1e9) / pinfo->period_ns : 0;
+}
 
 
 void timer_periodic_init(period_info *pinfo, long period_ns)

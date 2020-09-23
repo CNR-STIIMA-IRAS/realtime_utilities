@@ -48,7 +48,7 @@ bool rt_main_init(size_t pre_allocation_size);
 
 uint32_t timer_inc_period(period_info *pinfo);
 
-//uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time);
+uint32_t timer_inc_period(period_info *pinfo, int64_t offest_time);
 
 void   timer_periodic_init(period_info *pinfo, long period_ns);
 

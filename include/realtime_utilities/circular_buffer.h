@@ -15,32 +15,32 @@ class circ_buffer : private boost::noncopyable
 {
 public:
   typedef boost::mutex::scoped_lock lock;
-  circ_buffer() {}
-  ~circ_buffer() {}
+  circ_buffer() = default;
+  virtual ~circ_buffer() {}
   circ_buffer(int n)
   {
     cb.set_capacity(n);
   }
-  void push_back(T imdata)
+  virtual void push_back(T imdata)
   {
     lock lk(monitor);
     cb.push_back(imdata);
     buffer_not_empty.notify_one();
   }
-  void push_front(T imdata)
+  virtual void push_front(T imdata)
   {
     lock lk(monitor);
     cb.push_front(imdata);
     buffer_not_empty.notify_one();
   }
-  const T& front()
+  virtual const T& front()
   {
     lock lk(monitor);
     while (cb.empty())
       buffer_not_empty.wait(lk);
     return cb.front();
   }
-  const T& back()
+  virtual const T& back()
   {
     lock lk(monitor);
     while (cb.empty())
@@ -48,7 +48,7 @@ public:
     return cb.back();
   }
 
-  void pop_front()
+  virtual void pop_front()
   {
     lock lk(monitor);
     if (cb.empty())
@@ -56,52 +56,52 @@ public:
     return cb.pop_front();
   }
 
-  void clear()
+  virtual void clear()
   {
     lock lk(monitor);
     cb.clear();
   }
 
-  int size()
+  virtual int size()
   {
     lock lk(monitor);
     return cb.size();
   }
 
-  void set_capacity(int capacity)
+  virtual void set_capacity(int capacity)
   {
     lock lk(monitor);
     cb.set_capacity(capacity);
   }
 
-  bool empty()
+  virtual bool empty()
   {
     lock lk(monitor);
     return cb.empty();
   }
 
-  bool full()
+  virtual bool full()
   {
     lock lk(monitor);
     return cb.full();
   }
 
-  boost::circular_buffer<T>& get()
+  virtual boost::circular_buffer<T>& get()
   {
     return cb;
   }
 
-  const boost::circular_buffer<T>& get() const
+  virtual const boost::circular_buffer<T>& get() const
   {
     return cb;
   }
 
-  typename boost::circular_buffer<T>::iterator       begin()
+  typename boost::circular_buffer<T>::iterator begin()
   {
     lock lk(monitor);
     return cb.begin();
   }
-  typename boost::circular_buffer<T>::iterator       end()
+  typename boost::circular_buffer<T>::iterator end()
   {
     lock lk(monitor);
     return cb.end();
@@ -187,4 +187,4 @@ T min(const boost::circular_buffer<T>& cb)
 
 }  // namespace realtime_utilities
 
-#endif
+#endif  // REALTIME_UTILITIES_CIRCULAR_BUFFER_H
