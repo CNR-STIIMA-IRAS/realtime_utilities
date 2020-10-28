@@ -8,53 +8,62 @@
 namespace realtime_utilities
 {
 
-void DiagnosticsInterface::addDiagnosticsMessage(const std::string& msg, const std::string& name,
-                                             const std::string& level, std::stringstream* report)
+void DiagnosticsInterface::addDiagnosticsMessage(const std::string& level
+                                                , const std::string& summary
+                                                , const std::map<std::string, std::string>& key_values
+                                                , std::stringstream* report)
 {
   diagnostic_msgs::DiagnosticStatus diag;
-  diag.name       = name;
-  diag.hardware_id = m_hw_name;
-  diag.message    = " [ " + m_hw_name + " ] " + msg;
+  diag.name        = name_id_;
+  diag.hardware_id = hardware_id_;
+  diag.message     = summary; // " [ " + hardware_id_ + " ] " + msg;
 
   if (level == "OK")
   {
     diag.level = diagnostic_msgs::DiagnosticStatus::OK;
-    if(report) *report << "[" << m_hw_name << "] " << msg;
+    if(report) *report << "[" << hardware_id_ << "] " << summary;
   }
   if (level == "WARN")
   {
     diag.level = diagnostic_msgs::DiagnosticStatus::WARN;
-    if(report) *report << "[" << m_hw_name << "] " << msg;
+    if(report) *report << "[" << hardware_id_ << "] " << summary;
   }
   if (level == "ERROR")
   {
     diag.level = diagnostic_msgs::DiagnosticStatus::ERROR;
-    if(report) *report << "[" << m_hw_name << "] " << msg;
+    if(report) *report << "[" << hardware_id_ << "] " << summary;
   }
   if (level == "STALE")
   {
     diag.level = diagnostic_msgs::DiagnosticStatus::STALE;
-    if(report) *report << "[" << m_hw_name << "] " << msg;
+    if(report) *report << "[" << hardware_id_ << "] " << summary;
   }
 
-  std::lock_guard<std::mutex> lock(m_mutex);
-  m_diagnostic.status.push_back(diag);
+  for (const auto & key_value : key_values)
+  {
+    diagnostic_msgs::KeyValue kv;
+    kv.key = key_value.first;
+    kv.value = key_value.second;
+    diag.values.push_back(kv);
+  }
+  std::lock_guard<std::mutex> lock(mtx_);
+  diagnostic_.status.push_back(diag);
 }
 
 void DiagnosticsInterface::diagnostics(diagnostic_updater::DiagnosticStatusWrapper &stat, int level)
 {
-  std::lock_guard<std::mutex> lock(m_mutex);
-  boost::posix_time::ptime my_posix_time = ros::Time::now().toBoost();
+  std::lock_guard<std::mutex> lock(mtx_);
+  boost::posix_time::ptime my_posix_time = boost::posix_time::microsec_clock::local_time();
 
-  stat.hardware_id = m_hw_name;
-  stat.name        = "Ctrl ["
+  stat.hardware_id = hardware_id_;
+  stat.name        = name_id_ + "["
                    + ( level == (int)diagnostic_msgs::DiagnosticStatus::OK  ? std::string("Info")
                      : level == (int)diagnostic_msgs::DiagnosticStatus::WARN ? std::string("Warn")
                      : std::string("Error") )
                    +"]";
 
   bool something_to_add = false;
-  for (  const diagnostic_msgs::DiagnosticStatus & s : m_diagnostic.status )
+  for (  const diagnostic_msgs::DiagnosticStatus & s : diagnostic_.status )
   {
     something_to_add |= static_cast<int>( s.level ) == level;
   }
@@ -66,28 +75,28 @@ void DiagnosticsInterface::diagnostics(diagnostic_updater::DiagnosticStatusWrapp
                      : diagnostic_msgs::DiagnosticStatus::STALE;
 
     stat.summary(stat.level, "Log of the status at ["
-         + boost::posix_time::to_iso_string(my_posix_time) + "]");
+         + boost::posix_time::to_iso_string(my_posix_time.time_of_day()) + "]");
 
-    for ( const diagnostic_msgs::DiagnosticStatus & s : m_diagnostic.status )
+    for ( const diagnostic_msgs::DiagnosticStatus & s : diagnostic_.status )
     {
       diagnostic_msgs::KeyValue k;
       k.key = s.name;
       k.value = s.message;
       stat.add(k.key, k.value);
     }
-    m_diagnostic.status.erase(
+    diagnostic_.status.erase(
         std::remove_if(
-            m_diagnostic.status.begin(),
-            m_diagnostic.status.end(),
+            diagnostic_.status.begin(),
+            diagnostic_.status.end(),
             [&](diagnostic_msgs::DiagnosticStatus const & p) { return p.level == level; }
         ),
-        m_diagnostic.status.end()
+        diagnostic_.status.end()
     );
   }
   else
   {
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "None Error in the queue ["
-         + boost::posix_time::to_iso_string(my_posix_time) + "]");
+         + boost::posix_time::to_iso_string(my_posix_time.time_of_day()) + "]");
   }
 }
 
@@ -109,16 +118,16 @@ void DiagnosticsInterface::diagnosticsError(diagnostic_updater::DiagnosticStatus
 void DiagnosticsInterface::diagnosticsPerformance(diagnostic_updater::DiagnosticStatusWrapper &stat)
 {
 
-  boost::posix_time::ptime my_posix_time = ros::Time::now().toBoost();
-  std::lock_guard<std::mutex> lock(m_mutex);
-  stat.hardware_id = m_hw_name;
+  boost::posix_time::ptime my_posix_time = boost::posix_time::microsec_clock::local_time();
+  std::lock_guard<std::mutex> lock(mtx_);
+  stat.hardware_id = hardware_id_;
   stat.level       = diagnostic_msgs::DiagnosticStatus::OK;
-  stat.name        = "Ctrl";
-  stat.message     = "Cycle Time Statistics [" + boost::posix_time::to_iso_string(my_posix_time) + "]";
-  for(auto const & tracker :  m_time_span_tracker )
+  stat.name        = name_id_;
+  stat.message     = "Cycle Time Statistics [" + boost::posix_time::to_iso_string(my_posix_time.time_of_day()) + "]";
+  for(auto const & tracker :  time_span_tracker_ )
   {
     diagnostic_msgs::KeyValue k;
-    k.key = m_ctrl_name + " " + tracker.first + " [s]";
+    k.key = timer_id_ + " " + tracker.first + " [s]";
     k.value = to_string_fix(tracker.second->getMean())
             + std::string(" [ ") + to_string_fix(tracker.second->getMin()) + " - "
             + to_string_fix(tracker.second->getMax()) + std::string(" ] ")
@@ -129,9 +138,10 @@ void DiagnosticsInterface::diagnosticsPerformance(diagnostic_updater::Diagnostic
   }
 }
 
-void DiagnosticsInterface::addTimeTracker(const std::string& id)
+void DiagnosticsInterface::addTimeTracker(const std::string& id, const double& period)
 {
-  m_time_span_tracker[id].reset(new realtime_utilities::TimeSpanTracker(int(10.0/m_sampling_period), m_sampling_period));
+  time_span_tracker_[id].reset(new realtime_utilities::TimeSpanTracker(int(10.0/period), period));
+  period_[id] = period;
 }
 
 }

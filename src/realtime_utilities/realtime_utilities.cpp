@@ -47,7 +47,7 @@ bool show_new_pagefault_count(const char* logtext, const char* allowed_maj, cons
 bool prove_thread_stack_use_is_safe(size_t  stacksize)
 {
   volatile char buffer[stacksize];
-  int i;
+  size_t i;
 
   /* Prove that this thread is behaving well */
   for (i = 0; i < stacksize; i += sysconf(_SC_PAGESIZE))
@@ -109,7 +109,7 @@ bool configure_malloc_behavior(void)
 
 bool reserve_process_memory(size_t size)
 {
-  int i;
+  size_t i;
   char *buffer;
 
   buffer = (char*)malloc(size);
