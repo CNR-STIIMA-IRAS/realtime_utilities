@@ -16,6 +16,7 @@
 #endif
 #include <iostream>
 #include <ctime>
+#include <cassert>
 #include <ratio>
 #include <chrono>
 #include <mutex>

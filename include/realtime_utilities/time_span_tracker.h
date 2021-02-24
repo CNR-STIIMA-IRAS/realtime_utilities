@@ -12,6 +12,9 @@ namespace realtime_utilities
 
 struct TimeSpanTracker
 {
+  typedef std::shared_ptr< TimeSpanTracker > Ptr;
+  typedef std::shared_ptr< TimeSpanTracker const > ConstPtr;
+
   const double                                   nominal_time_span_;
   size_t                                         cycles_;
   size_t                                         missed_cycles_;
@@ -98,10 +101,19 @@ struct TimeSpanTracker
     return cycles_;
   }
 
+  TimeSpanTracker() = delete;
+  virtual ~TimeSpanTracker() = default;
+  TimeSpanTracker(const TimeSpanTracker&) = delete;
+  TimeSpanTracker& operator=(const TimeSpanTracker&) = delete;
+  TimeSpanTracker(TimeSpanTracker&&) = delete;
+  TimeSpanTracker& operator=(TimeSpanTracker&&) = delete;
+
   TimeSpanTracker(const int windows_dim, const double nominal_time_span)
     : nominal_time_span_(nominal_time_span), cycles_(0),missed_cycles_(0), mode_(NONE), buffer_(windows_dim) {}
-  //TimeSpanTracker( const TimeSpanTracker& ts): buffer_(ts.windows_dim_), nominal_time_span_(ts.nominal_time_span_), missed_cycles_(0), mode_(NONE){}
 };
+
+typedef TimeSpanTracker::Ptr TimeSpanTrackerPtr;
+typedef TimeSpanTracker::ConstPtr TimeSpanTrackerConstPtr;
 
 }  // namespace realtime_utilities
 
