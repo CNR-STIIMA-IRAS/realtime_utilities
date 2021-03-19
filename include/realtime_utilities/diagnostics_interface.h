@@ -49,14 +49,10 @@ public:
    * @brief addDiagnosticsMessage
    * @param msg
    * @param name
-   * @param level
+   * @param key_values
    * @param verbose
    */
-  // virtual void addDiagnosticsMessage( const std::string& msg,
-  //                                     const std::string& name,
-  //                                     const std::string& level,
-  //                                     std::stringstream* report);
-void addDiagnosticsMessage(const std::string& level
+void addDiagnosticsMessage( const std::string& level
                           , const std::string& summary
                           , const std::map<std::string, std::string>& key_values
                           , std::stringstream* report);
