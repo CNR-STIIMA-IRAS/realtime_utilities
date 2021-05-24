@@ -52,7 +52,7 @@ public:
    * @param key_values
    * @param verbose
    */
-void addDiagnosticsMessage( const std::string& level
+  void addDiagnosticsMessage( const std::string& level
                           , const std::string& summary
                           , const std::map<std::string, std::string>& key_values
                           , std::stringstream* report);
@@ -75,18 +75,16 @@ private:
   mutable diagnostic_msgs::DiagnosticArray                       diagnostic_;
   std::map<std::string, realtime_utilities::TimeSpanTrackerPtr>  time_span_tracker_;
   std::map<std::string, double >                                 period_;
-
 };
 
 template <typename T>
-std::string to_string_fix(const T a_value, const int n = 5)
+inline std::string to_string_fix(const T a_value, const int n = 5)
 {
   std::ostringstream out;
   out.precision(n);
   out << std::fixed << a_value;
   return out.str();
 }
-
 
 typedef DiagnosticsInterface::Ptr  DiagnosticsInterfacePtr;
 typedef DiagnosticsInterface::ConstPtr  DiagnosticsInterfaceConstPtr;
