@@ -133,7 +133,7 @@ public:
 private:
   size_t cnt;
   boost::condition buffer_not_empty;
-  boost::mutex monitor;
+  mutable boost::mutex monitor;
   boost::circular_buffer<T> cb;
 };
 

@@ -10,7 +10,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(catkin REQUIRED roscpp )
+find_package(catkin REQUIRED roscpp)
+find_package(Boost COMPONENTS system thread REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -32,7 +33,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC -Wall $<$<CONFIG:RELEASE>:-Ofast>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC  $<$<CONFIG:RELEASE>:NDEBUG> )
 
 add_executable(test_tasks test/tasks.cpp)
-target_link_libraries(test_tasks ${PROJECT_NAME} -lpthread)
+target_link_libraries(test_tasks ${PROJECT_NAME} -lpthread ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
 
 ###########
 ## Install ##

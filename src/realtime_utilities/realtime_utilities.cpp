@@ -1,4 +1,5 @@
-#include <ros/ros.h>
+//#include <ros/ros.h>
+#include <iostream>
 #include <realtime_utilities/realtime_utilities.h>
 
 #include <arpa/inet.h>
@@ -21,7 +22,6 @@ bool setprio(int prio, int sched)
   param.sched_priority = prio;
   if (sched_setscheduler(0, sched, &param) < 0)
   {
-    ROS_ERROR("sched_setscheduler");
     return false;
   }
   return true;
@@ -75,7 +75,7 @@ bool configure_malloc_behavior(void)
   /* Now lock all current and future pages from preventing of being paged */
   if (mlockall(MCL_CURRENT | MCL_FUTURE))
   {
-    ROS_ERROR("mlockall failed:");
+
     switch (errno)
     {
     case ENOSYS:
@@ -346,7 +346,7 @@ std::vector<std::string> get_ifaces()
 
   if (getifaddrs(&ifaddr) == -1)
   {
-    ROS_ERROR("getifaddrs");
+   
     return ret;
   }
 
