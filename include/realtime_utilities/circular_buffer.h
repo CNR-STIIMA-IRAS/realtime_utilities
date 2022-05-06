@@ -21,13 +21,13 @@ public:
   {
     cb.set_capacity(n);
   }
-  virtual void push_back(T imdata)
+  virtual void push_back(const T& imdata)
   {
     lock lk(monitor);
     cb.push_back(imdata);
     buffer_not_empty.notify_one();
   }
-  virtual void push_front(T imdata)
+  virtual void push_front(const T& imdata)
   {
     lock lk(monitor);
     cb.push_front(imdata);

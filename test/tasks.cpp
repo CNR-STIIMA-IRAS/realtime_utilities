@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include "realtime_utilities/realtime_ipc.h"
 #include "realtime_utilities/parallel_computing.h"
 
 int main(int argc, char* argv[])

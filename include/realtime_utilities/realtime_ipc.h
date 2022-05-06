@@ -1,6 +1,5 @@
-
-#ifndef __coe__ros__base_shared_memeory__h__
-#define __coe__ros__base_shared_memeory__h__
+#ifndef REALTIME_UTILITIES__REALTIME_IPC_H
+#define REALTIME_UTILITIES__REALTIME_IPC_H
 
 
 #include <boost/algorithm/string.hpp>
@@ -121,9 +120,9 @@ protected:
 };
 
 
-}
+}  // namespace realtime_utilities
 
-#include <realtime_utilities/realtime_ipc_impl.h>
+#include <realtime_utilities/internal/realtime_ipc_impl.h>
 
 
-#endif
+#endif  // REALTIME_UTILITIES__REALTIME_IPC_H

@@ -1,4 +1,7 @@
+#ifndef REALTIME_UTILITIES__REALTIME_IPC_IMPL_H
+#define REALTIME_UTILITIES__REALTIME_IPC_IMPL_H
 
+#include <realtime_utilities/realtime_ipc.h>
 
 namespace realtime_utilities
 {
@@ -35,17 +38,17 @@ std::string rt_pipe_read_error(int val)
 {
   switch (val)
   {
-  case -ETIMEDOUT   :
+  case -ETIMEDOUT:
     return "abs_timeout is reached before a message arrives..";
-  case -EWOULDBLOCK :
+  case -EWOULDBLOCK:
     return "abs_timeout is { .tv_sec = 0, .tv_nsec = 0 } and no message is immediately available on entry to the call";
-  case -EINTR       :
+  case -EINTR:
     return "rt_task_unblock() was called for the current task before a message was available";
-  case -EINVAL      :
+  case -EINVAL:
     return "q is not a valid queue descriptor.";
-  case -EIDRM       :
+  case -EIDRM:
     return "q is deleted while the caller was waiting for a message. In such event, q is no more valid upon return of this service";
-  case -EPERM       :
+  case -EPERM:
     return "this service should block, but was not called from a Xenomai thread";
   default:
     return "value '" + std::to_string(val) + " is not recognized.";
@@ -58,11 +61,11 @@ std::string rt_pipe_write_error(int val)
   switch (val)
   {
 
-  case -ENOMEM      :
+  case -ENOMEM:
     return "not enough buffer space is available to complete the operation.";
-  case -EINVAL      :
+  case -EINVAL:
     return "mode is invalid or pipe is not a pipe descriptor";
-  case -EIDRM       :
+  case -EIDRM:
     return "pipe is a closed pipe descriptor";
   default:
     return "value '" + std::to_string(val) + " is not recognized.";
@@ -76,9 +79,9 @@ std::string rt_pipe_delete_error(int val)
   {
   case -EINVAL:
     return ("pipe is not a valid pipe descriptor. Abort");
-  case -EIDRM :
+  case -EIDRM:
     return ("is returned if pipe is a closed pipe descriptor. Abort");
-  case -EPERM :
+  case -EPERM:
     return ("this service was called from an asynchronous context. Abort");
   }
   return "Error not tracked.";
@@ -110,7 +113,7 @@ bool RealTimeIPC::init()
   rt_skin_    = POSIX;
 
   // RT definitions
-  printf("[%sSTART%s] %sRealTimeIPC Init%s [ %s%s%s ] ========================\n", BOLDMAGENTA(), RESET(), BOLDBLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+  printf("RealTimeIPC Init [ %s ] ========================\n",name_.c_str());
   bool ok = true;
   try
   {
@@ -139,7 +142,7 @@ bool RealTimeIPC::init()
         // store old
         mode_t old_umask = umask(0);
 
-        printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Create memory (bytes %s%zu/%zu%s).\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), dim_with_header_ - sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_, RESET());
+        printf("RealTimeIPC Init [ %s ] Create memory (bytes %zu/%zu).\n", name_.c_str(), dim_with_header_ - sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_);
         shared_memory_ = boost::interprocess::shared_memory_object(boost::interprocess::create_only, name_.c_str(), boost::interprocess::read_write, permissions);
 
         shared_memory_.truncate(dim_with_header_);
@@ -156,21 +159,21 @@ bool RealTimeIPC::init()
     break;
     case SHMEM_CLIENT:
     {
-      printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Bond to Shared Memory.\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+      printf("RealTimeIPC Init[ %s ] Bond to Shared Memory.\n",  name_.c_str());
       shared_memory_ = boost::interprocess::shared_memory_object(boost::interprocess::open_only, name_.c_str(), boost::interprocess::read_write);
       shared_map_    = boost::interprocess::mapped_region(shared_memory_, boost::interprocess::read_write);
 
 
-      printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Bond to Mutex\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+      printf("RealTimeIPC Init[ %s ] Bond to Mutex\n",  name_.c_str());
       mutex_.reset(new  boost::interprocess::named_mutex(boost::interprocess::open_only, name_.c_str()));
 
       dim_with_header_ = shared_map_.get_size();
 
       assert(dim_with_header_ > sizeof(RealTimeIPC::DataPacket::Header));
 
-      printf("[-----] %sRealTimeIPC Init%s [ %s%s%s ] Bond to Shared Memory (bytes %s%zu/%zu%s).\n", BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), dim_with_header_ -  sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_, RESET());
+      printf("RealTimeIPC Init[ %s ] Bond to Shared Memory (bytes %zu/%zu).\n",  name_.c_str(), dim_with_header_ -  sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_);
 
-      printf("[%sREADY%s] %sRealTimeIPC Init%s [ %s%s%s ] Ready.\n", BOLDGREEN(), RESET(), BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+      printf("RealTimeIPC Init[ %s ] Ready.\n", name_.c_str());
     }
     break;
     case MQUEUE_SERVER:
@@ -193,22 +196,22 @@ bool RealTimeIPC::init()
   {
     if ((SHMEM_CLIENT == access_mode_) && (e.get_error_code() == boost::interprocess::not_found_error))
     {
-      printf("[%s CHECK%s] %sRealTimeIPC Init%s [ %s%s%s ] Memory does not exist. Continue.\n", RED(), RESET(), BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+      printf("RealTimeIPC Init[ %s ] Memory does not exist. Continue.\n", name_.c_str());
       ok = true;
     }
     else
     {
-      printf("[%sERROR%s] %sRealTimeIPC Init%s [ %s%s%s ] Error: %s, error code: %d. Abort.\n", RED(), RESET(), BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET(), e.what(), e.get_error_code());
+      printf("[ERROR] RealTimeIPC Init[ %s ] Error: %s, error code: %d. Abort.\n", name_.c_str(), e.what(), e.get_error_code());
       ok = false;
     }
   }
   catch (std::exception& e)
   {
-    printf("[%sERROR%s] %sRealTimeIPC Init%s [ %s%s%s ] Error: %s. Abort.\n", RED(), RESET(), BLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET(), e.what());
+    printf("[ERROR] RealTimeIPC Init[ %s ] Error: %s. Abort.\n", name_.c_str(), e.what());
     ok = false;
   }
 
-  printf("[%s%s%s] %sRealTimeIPC Init%s [ %s%s%s ] ========================.\n", ok ? BOLDGREEN() : RED(), ok ? " DONE" : "ERROR",   RESET(), BOLDBLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+  printf("[%s] RealTimeIPC Init[ %s ] ========================.\n", ok ? " DONE" : "ERROR", name_.c_str());
   return ok;
 }
 
@@ -218,7 +221,7 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
 
   if (dim_with_header_ > sizeof(RealTimeIPC::DataPacket::Header))
   {
-    printf("[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Shared Mem Destructor\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDBLUE(), RESET());
+    printf("[ %s ][ RealTimeIPC Destructor ] Shared Mem Destructor\n", name_.c_str());
 
     if (isBonded())
       breakBond();
@@ -240,16 +243,16 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
       case SHMEM_SERVER:
       {
         assert(rt_skin_ == POSIX);
-        printf("[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Remove Shared Mem\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDBLUE(), RESET());
+        printf("[ %s ][ RealTimeIPC Destructor ] Remove Shared Mem\n",  name_.c_str());
         if (! boost::interprocess::shared_memory_object::remove(name_.c_str()))
         {
           printf("Error in removing the shared memory object");
         }
-        printf("[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Remove Mutex\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDBLUE(), RESET());
+        printf("[ %s ][ RealTimeIPC Destructor ] Remove Mutex\n",  name_.c_str());
 
         if (!boost::interprocess::named_mutex::remove(name_.c_str()))
         {
-          printf("[ %s%s%s ][ %sRealTimeIPC Destructor%s ] Error\n", BOLDCYAN(), name_.c_str(), RED(), BOLDBLUE(), RESET());
+          printf("[ %s ][ RealTimeIPC Destructor ] Error\n",  name_.c_str());
         }
       }
       break;
@@ -274,13 +277,13 @@ RealTimeIPC::~RealTimeIPC() noexcept(false)
       break;
       }
 
-      printf("[%s DONE%s] %sRealTimeIPC Init%s [ %s%s%s ]\n", BOLDGREEN(), RESET(), BOLDBLUE(), RESET(), BOLDCYAN(), name_.c_str(), RESET());
+      printf("[ DONE] RealTimeIPC Init[ %s ]\n", name_.c_str());
     }
     catch (boost::interprocess::interprocess_exception &e)
     {
       if ((SHMEM_CLIENT == access_mode_) && (e.get_error_code() == boost::interprocess::not_found_error))
       {
-        printf("[ %s%s%s ] Memory does not exist, Check if correct?\n", BOLDCYAN(), name_.c_str(), YELLOW());
+        printf("[ %s ] Memory does not exist, Check if correct?\n",  name_.c_str());
       }
       else
       {
@@ -340,7 +343,6 @@ void RealTimeIPC::getDataPacket(RealTimeIPC::DataPacket* shmem)
 inline
 void RealTimeIPC::setDataPacket(const DataPacket* shmem)
 {
-  static size_t cnt = 0;
   assert(shmem);
   assert(dim_with_header_ < sizeof(RealTimeIPC::DataPacket));
 
@@ -389,9 +391,9 @@ bool RealTimeIPC::isHardRT()
   bool is_hard_rt = (shmem.header_.rt_flag_ ==  1);
   if (is_hard_rt_prev_ != is_hard_rt)
   {
-    printf("[ %s%s%s ] RT State Changed from '%s%s%s' to '%s%s%s'\n", BOLDCYAN(), name_.c_str(), RESET()
-           , BOLDCYAN(), (is_hard_rt_prev_ ? "HARD" : "SOFT"), RESET()
-           , BOLDCYAN(), (is_hard_rt       ? "HARD" : "SOFT"), RESET()) ;
+    printf("[ %s ] RT State Changed from '%s' to '%s'\n",  name_.c_str()
+           ,  (is_hard_rt_prev_ ? "HARD" : "SOFT")
+           ,  (is_hard_rt       ? "HARD" : "SOFT")) ;
     is_hard_rt_prev_ = is_hard_rt;
   }
   return (shmem.header_.rt_flag_ ==  1);
@@ -404,20 +406,20 @@ bool RealTimeIPC::setHardRT()
   if (dim_with_header_ == sizeof(RealTimeIPC::DataPacket::Header))
     return false;
 
-  printf("[ %s%s%s ] [%sSTART%s] Set Hard RT\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), RESET()) ;
+  printf("[ %s ] [START] Set Hard RT\n",  name_.c_str());
 
   DataPacket shmem;
   getDataPacket(&shmem);
 
-  if ((shmem.header_.rt_flag_ ==  1))
+  if (shmem.header_.rt_flag_ ==  1)
   {
-    printf("[ %s%s%s%s ] Already hard RT!\n", BOLDCYAN(), name_.c_str(), RESET(), RED()) ;
+    printf("[ %s ] Already hard RT!\n",  name_.c_str());
   }
 
   shmem.header_.rt_flag_ = 1;
   setDataPacket(&shmem);
 
-  printf("[ %s%s%s ] [%s DONE%s] Set Hard RT\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDGREEN(), RESET()) ;
+  printf("[ %s ] [ DONE] Set Hard RT\n",  name_.c_str());
   return true;
 }
 
@@ -427,7 +429,7 @@ bool RealTimeIPC::setSoftRT()
   if (dim_with_header_  == sizeof(RealTimeIPC::DataPacket::Header))
     return false;
 
-  printf("[ %s%s%s ] [%sSTART%s] Set Soft RT\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), RESET()) ;
+  printf("[ %s ] [START] Set Soft RT\n",  name_.c_str()) ;
 
   DataPacket shmem;
   getDataPacket(&shmem);
@@ -435,7 +437,7 @@ bool RealTimeIPC::setSoftRT()
   shmem.header_.rt_flag_ = 0;
   setDataPacket(&shmem);
 
-  printf("[ %s%s%s ] [%s DONE%s] Set soft RT\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDGREEN(), RESET()) ;
+  printf("[ %s ] [ DONE]Set soft RT\n",  name_.c_str()) ;
   return true;
 }
 
@@ -452,9 +454,9 @@ bool RealTimeIPC::isBonded()
   bool is_bonded = (shmem.header_.bond_flag_ == 1);
   if (bonded_prev_ != is_bonded)
   {
-    printf("[ %s%s%s ] Bonding State Changed from '%s%s%s' to '%s%s%s'\n", BOLDCYAN(), name_.c_str(), RESET()
-           , BOLDCYAN(), (bonded_prev_  ? "BONDED" : "UNBONDED"), RESET()
-           , BOLDCYAN(), (is_bonded     ? "BONDED" : "UNBONDED"), RESET()) ;
+    printf("[ %s ] Bonding State Changed from '%s' to '%s'\n",  name_.c_str()
+           ,  (bonded_prev_  ? "BONDED" : "UNBONDED")
+           ,  (is_bonded     ? "BONDED" : "UNBONDED")) ;
     bonded_prev_ = is_bonded;
   }
   return (shmem.header_.bond_flag_ == 1);
@@ -466,28 +468,28 @@ bool RealTimeIPC::bond()
   if (dim_with_header_ == sizeof(RealTimeIPC::DataPacket::Header))
     return false;
 
-  printf("[ %s%s%s ] [%sSTART%s] Bonding\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDCYAN(), RESET()) ;
+  printf("[ %s ] [START] Bonding\n",  name_.c_str()) ;
 
   DataPacket shmem;
   getDataPacket(&shmem);
 
-  if ((shmem.header_.bond_flag_ ==  1))
+  if (shmem.header_.bond_flag_ ==  1)
   {
-    printf("[ %s%s%s%s ] Already Bonded! Abort. \n\n****** RESET CMD FOR SAFETTY **** \n", BOLDCYAN(), name_.c_str(), RESET(), RED()) ;
+    printf("[ %s ] Already Bonded! Abort. \n\n****** RESET CMD FOR SAFETTY **** \n",  name_.c_str()) ;
     return false;
   }
 
   shmem.header_.bond_flag_ = 1;
   setDataPacket(&shmem);
 
-  printf("[ %s%s%s ] [%sDONE%s] Bonding\n", BOLDCYAN(), name_.c_str(), RESET(), BOLDGREEN(), RESET()) ;
+  printf("[ %s ] [DONE] Bonding\n",  name_.c_str()) ;
   return true;
 }
 
 inline
 bool RealTimeIPC::breakBond()
 {
-  printf("[ %s%s%s ] Break Bond\n", BOLDCYAN(), name_.c_str(), RESET()) ;
+  printf("[ %s ] Break Bond\n",  name_.c_str()) ;
   DataPacket shmem;
   getDataPacket(&shmem);
 
@@ -554,7 +556,7 @@ RealTimeIPC::ErrorCode RealTimeIPC::flush(uint8_t* obuffer, double* time, double
   }
   else
   {
-    // printf_THROTTLE( 2, "[ %s%s%s%s ] SAFETTY CMD (not bonded)", BOLDCYAN(), name_.c_str(), RESET(), RED()) ;
+    // printf_THROTTLE( 2, "[ %s ] SAFETTY CMD (not bonded)",  name_.c_str()) ;
     *time = 0.0;
     std::memset(obuffer, 0x0, (dim_with_header_ - sizeof(RealTimeIPC::DataPacket::Header)));
   }
@@ -603,7 +605,7 @@ RealTimeIPC::ErrorCode RealTimeIPC::flush(uint8_t* obuffer, double* time, double
       if (shmem.header_.rt_flag_ == 1)
       {
         if (scrn_cnt++ % 1000)
-          printf("[ %s%s%s%s ] Watchdog %fms (allowed: %f) ****** RESET CMD FOR SAFETTY ****\n", BOLDCYAN(), name_.c_str(), RESET(), RED(), (flush_time - start_watchdog_time_), watchdog_) ;
+          printf("[ %s ] Watchdog %fms (allowed: %f) ****** RESET CMD FOR SAFETTY ****\n",  name_.c_str(), (flush_time - start_watchdog_time_), watchdog_) ;
         if (RealTimeIPC::isServer(access_mode_))
         {
           std::memset(obuffer, 0x0, (dim_with_header_ - sizeof(RealTimeIPC::DataPacket::Header)));
@@ -612,7 +614,7 @@ RealTimeIPC::ErrorCode RealTimeIPC::flush(uint8_t* obuffer, double* time, double
       else
       {
         if (scrn_cnt++ % 1000)
-          printf("[ %s%s%s%s ] Watchdog %fms (allowed: %f) ****** SOFT RT, DON'T CARE ****\n", BOLDCYAN(), name_.c_str(), RESET(), YELLOW(), (flush_time - start_watchdog_time_), watchdog_) ;
+          printf("[ %s ] Watchdog %fms (allowed: %f) ****** SOFT RT, DON'T CARE ****\n",  name_.c_str(), (flush_time - start_watchdog_time_), watchdog_) ;
         ret = RealTimeIPC::NONE_ERROR;
       }
     }
@@ -634,16 +636,16 @@ std::string RealTimeIPC::to_string(RealTimeIPC::ErrorCode err)
   std::string ret = "na";
   switch (err)
   {
-  case NONE_ERROR               :
+  case NONE_ERROR:
     ret = "SHARED MEMORY NONE ERROR";
     break;
-  case UNMACTHED_DATA_DIMENSION :
+  case UNMACTHED_DATA_DIMENSION:
     ret = "SHARED MEMORY UNMATHCED DATA DIMENSION";
     break;
-  case UNCORRECT_CALL           :
+  case UNCORRECT_CALL:
     ret = "SHARED MEMORY UNCORRECT CALL SEQUENCE";
     break;
-  case WATCHDOG                 :
+  case WATCHDOG:
     ret = "SHARED MEMORY WATCHDOG";
     break;
   }
@@ -662,4 +664,6 @@ double RealTimeIPC::getWatchdog() const
   return watchdog_;
 }
 
-}
+}  // namespace realtime_utilities
+
+#endif  // REALTIME_UTILITIES__REALTIME_IPC_IMPL_H

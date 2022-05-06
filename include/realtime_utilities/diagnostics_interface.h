@@ -45,13 +45,9 @@ public:
     timer_id_ = timer_id; 
   };
 
-  /**
-   * @brief addDiagnosticsMessage
-   * @param msg
-   * @param name
-   * @param key_values
-   * @param verbose
-   */
+  const std::string& nameId() const { return name_id_; }
+  const std::string& hardwareId() const { return hardware_id_; }
+
   void addDiagnosticsMessage( const std::string& level
                           , const std::string& summary
                           , const std::map<std::string, std::string>& key_values

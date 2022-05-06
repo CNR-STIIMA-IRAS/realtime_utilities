@@ -17,14 +17,17 @@ class circ_buffer_stamped : public realtime_utilities::circ_buffer<std::tuple< s
 {
 public:
   circ_buffer_stamped(int n) : realtime_utilities::circ_buffer<std::tuple< std::string, double, T > >( n) {}
-  virtual bool push_back( const T& error )
+  void push_back( const std::tuple< std::string, double, T >& error ) override
+  {
+    realtime_utilities::circ_buffer<std::tuple< std::string, double, T > >::push_back( error );
+  }
+  void push_back( const T& error ) 
   {
     boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
     double      t = now.time_of_day().seconds();
     std::string s = boost::posix_time::to_simple_string( now );
 
     realtime_utilities::circ_buffer<std::tuple< std::string, double, T > >::push_back( std::make_tuple( s, t, error ) );
-    return true;
   }
 };
 
@@ -51,12 +54,12 @@ public:
   {
     //
   }
-  bool push_back( const T& c, const T& error )
+  bool push_back( const T& c, const T& val )
   {
     if( c == check )
       return false;
 
-    return push_back(error);
+    return push_back(val);
   }
 
 };
