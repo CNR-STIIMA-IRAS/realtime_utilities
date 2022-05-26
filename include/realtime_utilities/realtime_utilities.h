@@ -1,18 +1,27 @@
-#ifndef __ITIA__RT__UTILS__H__
-#define __ITIA__RT__UTILS__H__
+#ifndef REALTIME_UTILITIES__REALTIME_UTILITIES_H
+#define REALTIME_UTILITIES__REALTIME_UTILITIES_H
 
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/mman.h>  // Needed for mlockall()
-#include <unistd.h>    // needed for sysconf(int name);
-#include <malloc.h>
-#include <sys/time.h>  // needed for getrusage
-#include <sys/resource.h>  // needed for getrusage
-#include <pthread.h>
-#include <limits.h>
-#if defined(__COBALT__) && !defined(__COBALT_WRAP__)
-#include <alchemy/task.h>
+#if !defined(_WIN32) && !defined(_WIN64)
+  #include <sys/mman.h>  // Needed for mlockall()
+  #include <unistd.h>    // needed for sysconf(int name);
+  #include <malloc.h>
+  #include <sys/time.h>  // needed for getrusage
+  #include <sys/resource.h>  // needed for getrusage
+  #include <pthread.h>
+  #include <limits.h>
+  #if defined(__COBALT__) && !defined(__COBALT_WRAP__)
+  #include <alchemy/task.h>
+  #endif
+#else
+
+int clock_gettime(int X, struct timespec* ts);
+
+#define CLOCK_MONOTONIC 0
+#define TIMER_ABSTIME 0
+
 #endif
 #include <iostream>
 #include <ctime>
@@ -26,11 +35,13 @@
 namespace realtime_utilities
 {
 
+#pragma pack(push, 1)
 struct period_info
 {
   struct timespec next_period;
   long period_ns;
 };
+#pragma pack(pop)
 
 
 bool setprio(int prio, int sched);
@@ -139,6 +150,6 @@ bool rt_init_thread(size_t stack_size, int prio, int sched, period_info*  pinfo,
 
 
 
-}
+}  // namespace realtime_utilities
 
-#endif
+#endif  // REALTIME_UTILITIES__REALTIME_UTILITIES_H

@@ -48,12 +48,14 @@ public:
 
   struct DataPacket
   {
+#pragma pack(push, 1)
     struct Header
     {
       uint8_t bond_flag_;
       uint8_t rt_flag_;
       double  time_;
-    } __attribute__((packed)) header_;
+    } header_;
+#pragma pack(pop)
 
     char    buffer[MAX_IPC_BUF_LENGHT];
     DataPacket()

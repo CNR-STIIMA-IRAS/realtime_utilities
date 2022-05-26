@@ -118,7 +118,9 @@ bool RealTimeIPC::init()
   try
   {
     //------------------------------------------
-    boost::interprocess::permissions permissions(0677);
+    boost::interprocess::permissions permissions;
+    permissions.set_unrestricted();
+
     switch (access_mode_)
     {
     case PIPE_SERVER:
@@ -140,7 +142,7 @@ bool RealTimeIPC::init()
       {
 
         // store old
-        mode_t old_umask = umask(0);
+        // mode_t old_umask = umask(0);
 
         printf("RealTimeIPC Init [ %s ] Create memory (bytes %zu/%zu).\n", name_.c_str(), dim_with_header_ - sizeof(RealTimeIPC::DataPacket::Header), dim_with_header_);
         shared_memory_ = boost::interprocess::shared_memory_object(boost::interprocess::create_only, name_.c_str(), boost::interprocess::read_write, permissions);
@@ -153,7 +155,7 @@ bool RealTimeIPC::init()
         mutex_.reset(new  boost::interprocess::named_mutex(boost::interprocess::create_only, name_.c_str(), permissions));
 
         // restore old
-        umask(old_umask);
+        // umask(old_umask);
       }
     }
     break;

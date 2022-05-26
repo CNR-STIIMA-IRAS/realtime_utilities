@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
     return a*10;
   };
 
-  realtime_utilities::tasks tasks;
+  realtime_utilities::tasks<int> tasks;
 
   std::vector< std::future<int> > res;
   for(size_t i=0; i<11; i++)

@@ -1,37 +1,42 @@
 #ifndef REALTIME_UTILITIES__PARALLEL_COMPUTING__H
 #define REALTIME_UTILITIES__PARALLEL_COMPUTING__H
 
+#include <type_traits>
 #include <mutex>
 #include <future>
 #include <deque>
 #include <vector>
+#include <functional>
 
 namespace realtime_utilities
 {
 
+template<class R>
 struct tasks 
 {
-  
+
+  typedef std::function<R()> ThreadedFunction;
+
   // the mutex, condition variable and deque form a single
   // thread-safe triggered queue of tasks:
   std::mutex mtx_;
   std::condition_variable notifier_;
 
   // note that a packaged_task<void> can store a packaged_task<R>:
-  std::deque<std::packaged_task<void()>> work_;
+  std::deque<std::packaged_task<R()>> work_;
 
   // this holds futures representing the worker threads being done:
-  std::vector<std::future<void>> finished_;
+  std::vector<std::future< void >> finished_;
 
   // queue( lambda ) will enqueue the lambda into the tasks for the threads
   // to use.  A future of the type the lambda returns is given to let you get
   // the result out.
-  template<class F, class R=std::result_of_t<F&()>>
-  std::future<R> queue(F&& f)
+
+  std::future< R > queue(ThreadedFunction&& f)
   {
     // wrap the function object into a packaged task, splitting
     // execution from the return value:
-    std::packaged_task<R()> p(std::forward<F>(f));
+    std::packaged_task< R() > p(std::forward<ThreadedFunction>(f));
 
     auto r=p.get_future(); // get the return value before we hand off the task
     {
@@ -94,7 +99,7 @@ private:
     while(true)
     {
       // pop a task off the queue:
-      std::packaged_task<void()> f;
+      std::packaged_task<R()> f;
       {
         // usual thread-safe queue code:
         std::unique_lock<std::mutex> locker(mtx_);

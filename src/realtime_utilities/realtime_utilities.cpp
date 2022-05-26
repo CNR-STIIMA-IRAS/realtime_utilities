@@ -1,14 +1,105 @@
 #include <iostream>
 #include <realtime_utilities/realtime_utilities.h>
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <ifaddrs.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <linux/if_link.h>
+#if !defined(_WIN32) && !defined(_WIN64)
+  #include <arpa/inet.h>
+  #include <sys/socket.h>
+  #include <netdb.h>
+  #include <ifaddrs.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <unistd.h>
+  #include <linux/if_link.h>
+#else
+
+//#include <timezoneapi.h>
+//#include <profileapi.h>
+//#include <sysinfoapi.h>
+//#include <synchapi.h>
+#include <windows.h>
+
+LARGE_INTEGER
+getFILETIMEoffset()
+{
+    SYSTEMTIME s;
+    FILETIME f;
+    LARGE_INTEGER t;
+
+    s.wYear = 1970;
+    s.wMonth = 1;
+    s.wDay = 1;
+    s.wHour = 0;
+    s.wMinute = 0;
+    s.wSecond = 0;
+    s.wMilliseconds = 0;
+    SystemTimeToFileTime(&s, &f);
+    t.QuadPart = f.dwHighDateTime;
+    t.QuadPart <<= 32;
+    t.QuadPart |= f.dwLowDateTime;
+    return (t);
+}
+
+int
+clock_gettime(int X, struct timespec *ts)
+{
+    LARGE_INTEGER           t;
+    FILETIME            f;
+    double                  microseconds;
+    static LARGE_INTEGER    offset;
+    static double           frequencyToMicroseconds;
+    static int              initialized = 0;
+    static BOOL             usePerformanceCounter = 0;
+
+    if (!initialized) {
+        LARGE_INTEGER performanceFrequency;
+        initialized = 1;
+        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
+        if (usePerformanceCounter) {
+            QueryPerformanceCounter(&offset);
+            frequencyToMicroseconds = (double)performanceFrequency.QuadPart / 1000000.;
+        } else {
+            offset = getFILETIMEoffset();
+            frequencyToMicroseconds = 10.;
+        }
+    }
+    if (usePerformanceCounter) QueryPerformanceCounter(&t);
+    else {
+        GetSystemTimeAsFileTime(&f);
+        t.QuadPart = f.dwHighDateTime;
+        t.QuadPart <<= 32;
+        t.QuadPart |= f.dwLowDateTime;
+    }
+
+    t.QuadPart -= offset.QuadPart;
+    microseconds = (double)t.QuadPart / frequencyToMicroseconds;
+    t.QuadPart = microseconds;
+    ts->tv_sec = t.QuadPart / 1000000;
+    ts->tv_nsec = t.QuadPart % 1000000000;
+    return (0);
+}
+
+/* Windows sleep in 100ns units */
+BOOLEAN clock_nanosleep(LONGLONG ns, int flags,const struct timespec *request, struct timespec *remain){
+	/* Declarations */
+	HANDLE timer;	/* Timer handle */
+	LARGE_INTEGER li;	/* Time defintion */
+	/* Create timer */
+	if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+		return FALSE;
+	/* Set timer properties */
+	li.QuadPart = -ns;
+	if(!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)){
+		CloseHandle(timer);
+		return FALSE;
+	}
+	/* Start & wait for timer */
+	WaitForSingleObject(timer, INFINITE);
+	/* Clean resources */
+	CloseHandle(timer);
+	/* Slept without problems */
+	return TRUE;
+}
+#endif
 
 namespace realtime_utilities
 {
@@ -16,6 +107,7 @@ namespace realtime_utilities
 
 bool setprio(int prio, int sched)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
   struct sched_param param;
   // Set realtime priority for this thread
   param.sched_priority = prio;
@@ -23,11 +115,14 @@ bool setprio(int prio, int sched)
   {
     return false;
   }
+#endif
   return true;
 }
 
 bool show_new_pagefault_count(const char* logtext, const char* allowed_maj, const char* allowed_min)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
+
   static int last_majflt = 0, last_minflt = 0;
   struct rusage usage;
 
@@ -38,13 +133,16 @@ bool show_new_pagefault_count(const char* logtext, const char* allowed_maj, cons
          usage.ru_majflt - last_majflt, allowed_maj,
          usage.ru_minflt - last_minflt, allowed_min);
 
-  last_majflt = usage.ru_majflt;
+  last_majflt = usage.ru_majflt;1
   last_minflt = usage.ru_minflt;
+#endif
   return true;
 }
 
 bool prove_thread_stack_use_is_safe(size_t  stacksize)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
+
   volatile char buffer[stacksize];
   size_t i;
 
@@ -55,7 +153,7 @@ bool prove_thread_stack_use_is_safe(size_t  stacksize)
       pagefault. */
     buffer[i] = i;
   }
-
+#endif
   return show_new_pagefault_count("Caused by using thread stack", "0", "0");
 }
 
@@ -71,6 +169,7 @@ bool error(int at)
 
 bool configure_malloc_behavior(void)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
   /* Now lock all current and future pages from preventing of being paged */
   if (mlockall(MCL_CURRENT | MCL_FUTURE))
   {
@@ -102,12 +201,14 @@ bool configure_malloc_behavior(void)
 
   /* Turn off mmap usage. */
   mallopt(M_MMAP_MAX, 0);
-
+#endif
   return true;
 }
 
 bool reserve_process_memory(size_t size)
 {
+#if !defined(_WIN32) && !defined(_WIN64)
+
   size_t i;
   char *buffer;
 
@@ -130,7 +231,7 @@ bool reserve_process_memory(size_t size)
       mechanism we can build C++ applications that will never run into
       a major/minor pagefault, even with swapping enabled. */
   free(buffer);
-
+#endif
   return true;
 }
 
@@ -339,6 +440,8 @@ int64_t timer_to_ns(const struct timespec *timeA_p)
 std::vector<std::string> get_ifaces()
 {
   std::vector<std::string> ret;
+#if !defined(_WIN32) && !defined(_WIN64)
+
   ifaddrs *ifaddr, *ifa;
   int family, s, n;
   char host[NI_MAXHOST];
@@ -400,6 +503,7 @@ std::vector<std::string> get_ifaces()
   }
 
   freeifaddrs(ifaddr);
+#endif
   return ret;
 }
 
