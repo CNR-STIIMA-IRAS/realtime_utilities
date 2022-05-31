@@ -65,7 +65,7 @@ public:
   virtual int size()
   {
     lock lk(monitor);
-    return cb.size();
+    return static_cast<int>(cb.size());
   }
 
   virtual void set_capacity(int capacity)
