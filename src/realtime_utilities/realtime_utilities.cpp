@@ -405,6 +405,31 @@ std::vector<std::string> get_ifaces()
 
 
 
+bool rt_init_thread(size_t stack_size, int prio, int sched, period_info *pinfo, long period_ns)
+{
+
+  if (!setprio(prio, sched))
+  {
+    printf("Error in setprio.");
+    return false;
+  }
+
+  printf("I am an RT-thread with a stack that does not generate page-faults during use, stacksize=%zu\n", stack_size);
+
+  //<do your RT-thing here>
+
+  show_new_pagefault_count("Caused by creating thread", ">=0", ">=0");
+  prove_thread_stack_use_is_safe(stack_size);
+
+  if (pinfo != NULL)
+  {
+    assert(period_ns > 0);
+    timer_periodic_init(pinfo, period_ns);
+  }
+
+  return true;
+}
+
 
 }
 

@@ -1,0 +1,14 @@
+# - Config file for the realtime_utilities package
+# It defines the following variables
+#  realtime_utilities_INCLUDE_DIRS - include directories for FooBar
+#  realtime_utilities_LIBRARIES    - libraries to link against
+#  realtime_utilities_EXECUTABLE   - the bar executable
+
+set(realtime_utilities_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+
+# Our library dependencies (contains definitions for IMPORTED targets)
+include("${realtime_utilities_DIR}/export_realtime_utilities.cmake")
+
+# These are IMPORTED targets created by realtime_utilitiesTargets.cmake
+set(realtime_utilities_LIBRARIES realtime_utilities)
+

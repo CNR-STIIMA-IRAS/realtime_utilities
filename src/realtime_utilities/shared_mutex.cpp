@@ -1,4 +1,4 @@
-#include "shared_mutex.h"
+
 #include <errno.h> // errno, ENOENT
 #include <fcntl.h> // O_RDWR, O_CREATE
 #include <linux/limits.h> // NAME_MAX
@@ -8,6 +8,12 @@
 #include <stdio.h> // perror
 #include <stdlib.h> // malloc, free
 #include <string.h> // strcpy
+
+#include <realtime_utilities/shared_mutex.h>
+
+namespace realtime_utilities
+{
+  
 
 shared_mutex_t shared_mutex_init(char *name)
 {
@@ -124,4 +130,6 @@ int shared_mutex_destroy(shared_mutex_t mutex)
   }
   free(mutex.name);
   return 0;
+}
+
 }
