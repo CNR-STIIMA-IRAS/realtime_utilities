@@ -9,6 +9,19 @@
 namespace realtime_utilities
 {
 
+template<typename T>
+void maybe_unused(T const & v) 
+{ 
+  static_cast<void>(v);
+}
+
+template<typename T, typename... Args>
+void maybe_unused(T first, Args... args) {
+  maybe_unused(first);
+  return maybe_unused(args...);
+}
+
+
 struct tasks 
 {
   
@@ -77,6 +90,7 @@ struct tasks
       std::unique_lock<std::mutex> locker(mtx_);
       for(auto&& unused: finished_)
       {
+        maybe_unused(unused);
         work_.push_back({});
       }
     }

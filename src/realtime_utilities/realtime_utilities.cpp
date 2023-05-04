@@ -45,7 +45,7 @@ bool show_new_pagefault_count(const char* logtext, const char* allowed_maj, cons
 
 bool prove_thread_stack_use_is_safe(size_t  stacksize)
 {
-  volatile char buffer[stacksize];
+  char* buffer = new char[stacksize];
   size_t i;
 
   /* Prove that this thread is behaving well */

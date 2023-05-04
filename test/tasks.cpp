@@ -5,7 +5,8 @@
 
 int main(int argc, char* argv[])
 {
-
+  realtime_utilities::maybe_unused(argc);
+  realtime_utilities::maybe_unused(argv);
   auto function = [](int a) -> int
   {
     std::cout << "inside: " << a * 10 << std::endl;

@@ -1,7 +1,7 @@
 #############################
 ## PRELIMINARIES           ##
 #############################
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1.0)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cnrConfigMacros.cmake)
 
@@ -82,15 +82,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "$<INSTALL_INTERFACE:${INSTALL_INTERFACE_INCLUDE_DIRS}>")
 
 if(USE_ROS1)
-  target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES}
-    soem ${catkin_LIBRARIES}
-  )
+  target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES} ${catkin_LIBRARIES})
 else()
-  target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES}
-    soem Boost::system ${coe_core_LIBRARIES}
-  )
+  target_link_libraries(${PROJECT_NAME} PUBLIC Boost::system PUBLIC ${coe_core_LIBRARIES})
 endif()
-target_compile_definitions(${PROJECT_NAME} PRIVATE "COE_CORE_BUILDING_LIBRARY")
 #################
 ## END - Build ##
 #################
